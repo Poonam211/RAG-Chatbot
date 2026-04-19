@@ -23,7 +23,7 @@ def create_rag_pipeline(file_path):
         model_name="all-MiniLM-L6-v2"
     )
 
-    # 🔥 Unique DB path (fix for permission error)
+    # Unique DB path
     db_path = f"chroma_db_{uuid.uuid4().hex}"
 
     vectorstore = Chroma.from_documents(
