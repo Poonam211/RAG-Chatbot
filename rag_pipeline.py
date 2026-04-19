@@ -3,14 +3,13 @@ from langchain_text_splitters import CharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_community.llms import Ollama
+import uuid
 
 
-def create_rag_pipeline():
-    # Load data
-    loader = TextLoader("data/sample.txt")
+def create_rag_pipeline(file_path):
+    # Load uploaded file
+    loader = TextLoader(file_path)
     documents = loader.load()
-
-    print("Loaded documents:", documents)  # DEBUG
 
     # Split text
     text_splitter = CharacterTextSplitter(
@@ -19,22 +18,25 @@ def create_rag_pipeline():
     )
     docs = text_splitter.split_documents(documents)
 
-    print("Split docs:", len(docs))  # DEBUG
-
     # Embeddings
     embeddings = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2"
     )
 
-    # Vector store
+    # 🔥 Unique DB path (fix for permission error)
+    db_path = f"chroma_db_{uuid.uuid4().hex}"
+
     vectorstore = Chroma.from_documents(
         docs,
         embeddings,
-        persist_directory="chroma_db"
+        persist_directory=db_path
     )
 
     # Retriever
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": 3}
+    )
 
     # LLM
     llm = Ollama(model="phi")

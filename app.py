@@ -1,22 +1,53 @@
 import streamlit as st
+import os
 from rag_pipeline import create_rag_pipeline
 
-st.title("🧠 ContextAI RAG-Chatbot")
+# Title
+st.markdown(
+    "<h4 style='text-align: center;'>🧠 ContextAI - RAG Chatbot</h4>",
+    unsafe_allow_html=True
+)
 
-retriever, llm = create_rag_pipeline()
+# Upload file
+uploaded_file = st.file_uploader("📂 Upload a .txt file", type=["txt"])
 
-query = st.text_input("Ask something:")
+if uploaded_file:
+    # Save uploaded file
+    os.makedirs("data", exist_ok=True)
+    file_path = os.path.join("data", uploaded_file.name)
 
-if query:
-    docs = retriever.get_relevant_documents(query)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-    st.write("📄 Retrieved Docs:", docs)  # DEBUG
+    st.success("✅ File uploaded successfully!")
 
-    if docs:
-        context = "\n".join([doc.page_content for doc in docs])
-        prompt = f"Answer based on this:\n{context}\n\nQuestion: {query}"
+    # Create pipeline
+    retriever, llm = create_rag_pipeline(file_path)
 
-        response = llm.invoke(prompt)
-        st.write("🤖 Answer:", response)
-    else:
-        st.write("❌ No relevant documents found")
+    # Input query
+    query = st.text_input("Ask something from your document:")
+
+    if query:
+        docs = retriever.get_relevant_documents(query)
+
+        if docs:
+            context = "\n".join([doc.page_content for doc in docs])
+
+            prompt = f"""
+You are a helpful assistant.
+Answer ONLY using the context below.
+
+Context:
+{context}
+
+Question:
+{query}
+
+Answer:
+"""
+
+            response = llm.invoke(prompt)
+            st.write("🤖 Answer:", response)
+
+        else:
+            st.write("❌ No relevant information found")
